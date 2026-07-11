@@ -705,6 +705,18 @@ do
 
     stylua = {}, -- Used to format Lua code
 
+    gopls = { -- Used to format go code
+      settings = {
+        gopls = {
+          analyses = {
+            unusedparams = true,
+          },
+          staticcheck = true,
+          gofumpt = true, -- Uses gofumpt formatting if installed, otherwise defaults to gofmt
+        },
+      },
+    },
+
     -- Special Lua Config, as recommended by neovim help docs
     lua_ls = {
       on_init = function(client)
@@ -900,11 +912,14 @@ do
   --
   --  See `:help nvim-treesitter-intro`
 
+  -- Add the parser install directory to Neovim's runtimepath
+  vim.opt.runtimepath:append(vim.fn.stdpath 'data' .. '/site')
+
   -- NOTE: You can also specify a branch or a specific commit
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
 
   -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'go', 'gomod', 'gosum', 'gowork' }
   require('nvim-treesitter').install(parsers)
 
   ---@param buf integer
@@ -950,6 +965,22 @@ do
       end
     end,
   })
+
+  -- Format and organize imports in golang files on buffer write
+  vim.api.nvim_create_autocmd('BufWritePre', {
+    pattern = '*.go',
+    callback = function()
+      -- 1. Organize imports synchronously using the standard API
+      vim.lsp.buf.code_action {
+        context = { only = { 'source.organizeImports' } },
+        apply = true,
+      }
+
+      -- 2. Format the code cleanly
+      vim.lsp.buf.format { async = false }
+    end,
+  })
+
 end
 
 -- ============================================================
