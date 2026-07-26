@@ -99,7 +99,11 @@ do
   vim.g.maplocalleader = ' '
 
   -- Set to true if you have a Nerd Font installed and selected in the terminal
-  vim.g.have_nerd_font = false
+  vim.g.have_nerd_font = true
+
+  -- Disable legacy provider to clear checkhealth warnings and speed up startup
+  vim.g.loaded_perf_provider = 0
+  vim.g.loaded_ruby_provider = 0
 
   -- [[ Setting options ]]
   --  See `:help vim.o`
@@ -980,7 +984,6 @@ do
       vim.lsp.buf.format { async = false }
     end,
   })
-
 end
 
 -- ============================================================
@@ -1010,5 +1013,50 @@ do
   -- require 'custom.plugins'
 end
 
+-- ============================================================
+-- SECTION 11: Golang plugins
+-- kickstart.plugins.* examples
+-- ============================================================
+do
+  vim.pack.add {
+    gh 'ray-x/guihua.lua',
+    gh 'ray-x/go.nvim',
+  }
+  require('go').setup()
+  -- 1. Load the plugins into Neovim
+  vim.pack.add { gh 'mfussenegger/nvim-dap' }
+  vim.pack.add { gh 'nvim-neotest/nvim-nio' } -- must load before dap-ui
+  vim.pack.add {
+    gh 'rcarriga/nvim-dap-ui',
+    gh 'theHamsta/nvim-dap-virtual-text',
+    gh 'leoluz/nvim-dap-go',
+  }
+
+  -- 2. Configure them
+  local dap = require 'dap'
+  local dapui = require 'dapui'
+
+  require('nvim-dap-virtual-text').setup({})
+  require('dap-go').setup()
+  dapui.setup()
+
+  -- Automatically open/close DAP UI windows during debug sessions
+  dap.listeners.after.event_initialized['dapui_config'] = function() dapui.open() end
+  dap.listeners.before.event_terminated['dapui_config'] = function() dapui.close() end
+  dap.listeners.before.event_exited['dapui_config'] = function() dapui.close() end
+
+  -- ==========================================
+  -- 3. Add Keymaps Here
+  -- ==========================================
+  vim.keymap.set('n', '<leader>b', function() dap.toggle_breakpoint() end, { desc = 'Debug: Toggle Breakpoint' })
+  vim.keymap.set('n', '<F5>', function() dap.continue() end, { desc = 'Debug: Start/Continue' })
+  vim.keymap.set('n', '<F10>', function() dap.step_over() end, { desc = 'Debug: Step Over' })
+  vim.keymap.set('n', '<F11>', function() dap.step_into() end, { desc = 'Debug: Step Into' })
+  vim.keymap.set('n', '<F12>', function() dap.step_out() end, { desc = 'Debug: Step Out' })
+
+  -- Go-specific test debugging
+  vim.keymap.set('n', '<leader>dt', function() require('dap-go').debug_test() end, { desc = 'Debug: Test under cursor' })
+  -- Initialize the plugin
+end
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
