@@ -102,7 +102,7 @@ do
   vim.g.have_nerd_font = true
 
   -- Disable legacy provider to clear checkhealth warnings and speed up startup
-  vim.g.loaded_perf_provider = 0
+  vim.g.loaded_perl_provider = 0
   vim.g.loaded_ruby_provider = 0
 
   -- [[ Setting options ]]
