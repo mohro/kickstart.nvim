@@ -319,6 +319,16 @@ do
         vim.cmd 'TSUpdate'
         return
       end
+
+      -- Prebuilt preview server for iamcco/markdown-preview.nvim.
+      if name == 'markdown-preview.nvim' then
+        local package_file = ev.data.path .. '/package.json'
+        local ok, info = pcall(vim.json.decode, table.concat(vim.fn.readfile(package_file), '\n'))
+        local cmd = { 'bash', 'app/install.sh' }
+        if ok and type(info) == 'table' and type(info.version) == 'string' then table.insert(cmd, 'v' .. info.version) end
+        run_build(name, cmd, ev.data.path)
+        return
+      end
     end,
   })
 end
@@ -375,6 +385,7 @@ do
     spec = {
       { '<leader>s', group = '[S]earch', mode = { 'n', 'v' } },
       { '<leader>t', group = '[T]oggle' },
+      { '<leader>m', group = '[M]arkdown' },
       { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
     },
@@ -1063,6 +1074,56 @@ do
   -- Go-specific test debugging
   vim.keymap.set('n', '<leader>dt', function() require('dap-go').debug_test() end, { desc = 'Debug: Test under cursor' })
   -- Initialize the plugin
+end
+
+-- ============================================================
+-- SECTION 12: Markdown preview and Zen Mode
+-- ============================================================
+do
+  -- Preview Markdown in the browser. The preview server is installed by the
+  -- PackChanged hook in section 3.
+  -- https://github.com/iamcco/markdown-preview.nvim
+  vim.g.mkdp_auto_start = 0
+  vim.g.mkdp_auto_close = 1
+  vim.g.mkdp_theme = 'dark'
+
+  vim.pack.add { gh 'iamcco/markdown-preview.nvim' }
+
+  vim.keymap.set('n', '<leader>mp', function()
+    if vim.bo.filetype ~= 'markdown' then
+      vim.notify('Markdown preview runs in a Markdown buffer', vim.log.levels.WARN)
+      return
+    end
+    vim.cmd.MarkdownPreviewToggle()
+  end, { desc = '[M]arkdown [P]review' })
+
+  -- Distraction-free editing. Toggle with <leader>tz or :ZenMode.
+  -- https://github.com/folke/zen-mode.nvim
+  vim.pack.add { gh 'folke/zen-mode.nvim' }
+  require('zen-mode').setup {
+    window = {
+      width = 100,
+      options = {
+        number = false,
+        relativenumber = false,
+        signcolumn = 'no',
+        cursorline = false,
+        foldcolumn = '0',
+        list = false,
+      },
+    },
+    plugins = {
+      -- Twilight is not installed. Leave this off so Zen Mode does not load it.
+      twilight = { enabled = false },
+      -- Hide git signs while the Zen window is open.
+      gitsigns = { enabled = true },
+      options = {
+        laststatus = 0,
+      },
+    },
+  }
+
+  vim.keymap.set('n', '<leader>tz', function() require('zen-mode').toggle() end, { desc = '[T]oggle [Z]en Mode' })
 end
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
