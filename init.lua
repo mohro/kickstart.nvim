@@ -319,16 +319,6 @@ do
         vim.cmd 'TSUpdate'
         return
       end
-
-      -- Prebuilt preview server for iamcco/markdown-preview.nvim.
-      if name == 'markdown-preview.nvim' then
-        local package_file = ev.data.path .. '/package.json'
-        local ok, info = pcall(vim.json.decode, table.concat(vim.fn.readfile(package_file), '\n'))
-        local cmd = { 'bash', 'app/install.sh' }
-        if ok and type(info) == 'table' and type(info.version) == 'string' then table.insert(cmd, 'v' .. info.version) end
-        run_build(name, cmd, ev.data.path)
-        return
-      end
     end,
   })
 end
@@ -1080,22 +1070,13 @@ end
 -- SECTION 12: Markdown preview and Zen Mode
 -- ============================================================
 do
-  -- Preview Markdown in the browser. The preview server is installed by the
-  -- PackChanged hook in section 3.
-  -- https://github.com/iamcco/markdown-preview.nvim
-  vim.g.mkdp_auto_start = 0
-  vim.g.mkdp_auto_close = 1
-  vim.g.mkdp_theme = 'dark'
+  -- Render Markdown in the current buffer.
+  -- Uses the markdown treesitter parsers from section 9, plus mini.icons.
+  -- https://github.com/MeanderingProgrammer/render-markdown.nvim
+  vim.pack.add { gh 'MeanderingProgrammer/render-markdown.nvim' }
+  require('render-markdown').setup {}
 
-  vim.pack.add { gh 'iamcco/markdown-preview.nvim' }
-
-  vim.keymap.set('n', '<leader>mp', function()
-    if vim.bo.filetype ~= 'markdown' then
-      vim.notify('Markdown preview runs in a Markdown buffer', vim.log.levels.WARN)
-      return
-    end
-    vim.cmd.MarkdownPreviewToggle()
-  end, { desc = '[M]arkdown [P]review' })
+  vim.keymap.set('n', '<leader>mp', '<cmd>RenderMarkdown toggle<CR>', { desc = '[M]arkdown [P]review' })
 
   -- Distraction-free editing. Toggle with <leader>tz or :ZenMode.
   -- https://github.com/folke/zen-mode.nvim
